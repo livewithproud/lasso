@@ -25,12 +25,21 @@ simulation <- function(n, p, iterate, d, b, sigma)
 		y <- x %*% b + e
 		f <- lasso(x,y,trace = FALSE)
 		
-		  
-		mintemp <- min(f$Cp[-1]) # f$Cp - F$len.act abs
-		logitemp <- f$Cp == mintemp
+		# choose variable
+		if(f$CpdisSign)
+		{
+			lCp <- length(f$Cp)
+			rCp <- range(f$Cp)
+			newCp <- f$Cp * (lCp/(rCp[2] - rCp[1]))
+			point <- cbind(seq(lCp) - 1, newCp)
+			distance <- apply(point^2, 1, sum)
+			logitemp <- distance == min(distance)
+		} else 
+		{ logitemp <- f$Cp == min(f$Cp[-1]) }
+				
 		coef[t, ] <- f$beta[logitemp, ]
-		zerotemp <- coef[t,] > eps
-		model[[t]] <- num[!zerotemp]
+		nonzero <- coef[t, ] > eps
+		model[[t]] <- num[nonzero]
 		Cp[t,] <- f$Cp[logitemp]
 		RSS[t,] <- f$RSS[logitemp]
 	}
@@ -59,9 +68,8 @@ simulation <- function(n, p, iterate, d, b, sigma)
 	}
 	distinprop <- prop
 	q <- seq(l)
-	maxprop <- max(prop)
-	distincoor <- q[prop == maxprop] # distinmodel
-	maxpropmodel <- distinmodel[[distincoor]]
+	distincoor <- q[prop == max(prop)] # distinmodel
+	maxpropmodel <- distinmodel[distincoor]
 	aver0 <- no.of0 %*% prop
 
 	y1 <- y2 <- y3 <- y4 <- 0
@@ -69,19 +77,19 @@ simulation <- function(n, p, iterate, d, b, sigma)
 	for(i in 1:iterate)
 	{
 		temp <- length(model[[i]])
-		if(temp == 90) y1 <- y1 + 1
-		else if(temp == 89) y2 <- y2 + 1
-		else if(temp == 88) y3 <- y3 + 1
-		else if(temp == 87) y4 <- y4 + 1
+		if(temp == 0) y1 <- y1 + 1
+		else if(temp == 9) y2 <- y2 + 1
+		else if(temp == 8) y3 <- y3 + 1
+		else if(temp == 7) y4 <- y4 + 1
 	}
-
 	topprop[[1]] <- y1/iterate
 	topprop[[2]] <- y2/iterate
 	topprop[[3]] <- y3/iterate
 	topprop[[4]] <- y4/iterate
 	object <- list(aver0 = aver0, coef = coef, model = model, 
-				   Cp = Cp, RSS = RSS, distinprop = prop,
-				   maxpropmodel = maxpropmodel, topprop = topprop)
+				   Cp = Cp, RSS = RSS, distinmodel = distinmodel, 
+				   distinprop = prop, maxpropmodel = maxpropmodel, 
+				   topprop = topprop, no.of0 = no.of0)
 	class(object) <- "simulation"
-	#object
+	object
 }

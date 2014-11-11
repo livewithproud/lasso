@@ -58,6 +58,7 @@ lasso <- function(x , y, normalize = TRUE, intercept = TRUE, eps = .Machine$doub
   lambda <- double(max.steps)
   R2 <- 1
   RSS <- ssy
+  CpdisSign <- FALSE
   first.in <- integer(m) # m个0
   active <- NULL
   actions <- as.list(seq(max.steps))
@@ -170,13 +171,17 @@ lasso <- function(x , y, normalize = TRUE, intercept = TRUE, eps = .Machine$doub
   }else { df <- c(NULL <- 0, df)}
   rss.big <- rev(RSS)[1]
   df.big <- n-rev(df)[1]
-  if(rss.big < eps | df.big < eps) sigma2 <- NaN
-  else
-    sigma2 <- rss.big/df.big
+  if(rss.big < eps | df.big < eps)
+  {
+    sigma2 <- rss.big/(df.big + eps)
+    CpdisSign <- TRUE
+  } 
+  else sigma2 <- rss.big/df.big
   Cp <- RSS/sigma2 - n + 2 * df ####### 
-  object <- list(beta = beta, Cp = Cp, RSS = RSS, df = df,
-                 netdf = netdf,actions=actions,TSS = ssy)
-  ### R2 = R2, A = A, ignores <- ignores
+  object <- list(beta = beta, Cp = Cp, RSS = RSS, df = df, 
+                 CpdisSign = CpdisSign, df.big = df.big, 
+                 rss.big = rss.big)
+  ### R2 = R2, A = A, ignores <- ignores,actions=actions, netdf = netdf,TSS = ssy
   ### actions = actions[seq(k)],entry = first.in,mu = mu, normx = normx, meanx = meanx, x=x, y=y
   object
 }
